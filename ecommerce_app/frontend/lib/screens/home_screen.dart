@@ -2,6 +2,8 @@ import 'package:ecommerce_app/services/api_service.dart';
 import 'package:flutter/material.dart';
 
 class HomeScreen extends StatefulWidget {
+  const HomeScreen({super.key});
+
   @override
   _HomeScreenState createState() => _HomeScreenState();
 }
@@ -143,7 +145,7 @@ class CategoryCard extends StatelessWidget {
   final String imageUrl;
   final String label;
 
-  CategoryCard({required this.imageUrl, required this.label});
+  const CategoryCard({super.key, required this.imageUrl, required this.label});
 
   @override
   Widget build(BuildContext context) {
@@ -165,7 +167,8 @@ class ProductCard extends StatelessWidget {
   final String imageUrl;
   final int price;
 
-  ProductCard({
+  const ProductCard({
+    super.key,
     required this.name,
     required this.imageUrl,
     required this.price,
