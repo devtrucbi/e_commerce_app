@@ -1,0 +1,119 @@
+import 'package:ecommerce_app/services/api_service.dart';
+import 'package:flutter/material.dart';
+
+class HomeScreen extends StatefulWidget {
+  @override
+  _HomeScreenState createState() => _HomeScreenState();
+}
+
+class _HomeScreenState extends State<HomeScreen> {
+  late Future<List<Map<String, dynamic>>> _promotionalProducts;
+  late Future<List<Map<String, dynamic>>> _newProducts;
+  late Future<List<Map<String, dynamic>>> _bestSellers;
+  late Future<List<Map<String, dynamic>>> _laptops;
+  late Future<List<Map<String, dynamic>>> _monitors;
+  late Future<List<Map<String, dynamic>>> _hardDrives;
+
+  @override
+  void initState() {
+    super.initState();
+    // Gọi API để lấy sản phẩm theo danh mục
+    _promotionalProducts = ApiService.fetchProductsByCategory('promotional');
+    _newProducts = ApiService.fetchProductsByCategory('new');
+    _bestSellers = ApiService.fetchProductsByCategory('best_sellers');
+    _laptops = ApiService.fetchProductsByCategory('laptops');
+    _monitors = ApiService.fetchProductsByCategory('monitors');
+    _hardDrives = ApiService.fetchProductsByCategory('hard_drives');
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(title: Text('Products by Category')),
+      body: SingleChildScrollView(
+        child: Column(
+          children: [
+            // Hiển thị sản phẩm theo danh mục promotional
+            _buildProductSection('Promotional Products', _promotionalProducts),
+            _buildProductSection('New Products', _newProducts),
+            _buildProductSection('Best Sellers', _bestSellers),
+            _buildProductSection('Laptops', _laptops),
+            _buildProductSection('Monitors', _monitors),
+            _buildProductSection('Hard Drives', _hardDrives),
+          ],
+        ),
+      ),
+    );
+  }
+
+  // Widget để hiển thị sản phẩm theo danh mục
+  Widget _buildProductSection(
+    String title,
+    Future<List<Map<String, dynamic>>> products,
+  ) {
+    return FutureBuilder<List<Map<String, dynamic>>>(
+      future: products,
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return Padding(
+            padding: const EdgeInsets.all(8.0),
+            child: CircularProgressIndicator(),
+          );
+        }
+
+        if (snapshot.hasError) {
+          return Padding(
+            padding: const EdgeInsets.all(8.0),
+            child: Text('Error: ${snapshot.error}'),
+          );
+        }
+
+        if (!snapshot.hasData || snapshot.data!.isEmpty) {
+          return Padding(
+            padding: const EdgeInsets.all(8.0),
+            child: Text('No products available in this category'),
+          );
+        }
+
+        final products = snapshot.data!;
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              title,
+              style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+            ),
+            SizedBox(height: 10),
+            GridView.builder(
+              shrinkWrap: true,
+              physics: NeverScrollableScrollPhysics(),
+              gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                crossAxisCount: 2,
+                childAspectRatio: 0.75,
+                crossAxisSpacing: 10,
+                mainAxisSpacing: 10,
+              ),
+              itemCount: products.length,
+              itemBuilder: (context, index) {
+                return Card(
+                  child: Column(
+                    children: [
+                      Image.network(
+                        products[index]['images'][0],
+                        height: 120,
+                        width: 120,
+                        fit: BoxFit.cover,
+                      ),
+                      Text(products[index]['name']),
+                      Text('\$${products[index]['price']}'),
+                    ],
+                  ),
+                );
+              },
+            ),
+          ],
+        );
+      },
+    );
+  }
+}
