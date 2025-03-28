@@ -27,13 +27,14 @@ const getProductsByCategory = async (req, res) => {
   };
 // Thêm sản phẩm mới
 const addProduct = async (req, res) => {
-  const { name, description, price, category, images, variants, rating } = req.body;
+  const { name, description, price, category,status, images, variants, rating } = req.body;
 
   const newProduct = new Product({
     name,
     description,
     price,
     category,
+    status,
     images,
     variants,
     rating,

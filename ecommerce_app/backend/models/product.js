@@ -6,6 +6,7 @@ const productSchema = new mongoose.Schema({
   description: { type: String, required: true },
   price: { type: Number, required: true },
   category: { type: String, required: true },
+  status: { type: String, required: true },
   images: [String],    // Mảng chứa URL ảnh
   variants: [String],  // Các biến thể của sản phẩm (màu sắc, kích thước, v.v.)
   rating: { type: Number, min: 1, max: 5, default: 1 },

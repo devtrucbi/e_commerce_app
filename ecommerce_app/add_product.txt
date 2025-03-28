@@ -1,0 +1,8 @@
+{
+    "name": "Laptop",
+    "description": "High performance laptop",
+    "price": 1500,
+    "category": "Electronics",
+    "images": ["image_url"],
+    "rating": 4.5
+  }

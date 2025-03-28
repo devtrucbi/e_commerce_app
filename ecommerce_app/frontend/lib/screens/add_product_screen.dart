@@ -14,6 +14,7 @@ class _AddProductScreenState extends State<AddProductScreen> {
   String _description = '';
   double _price = 0.0;
   String _category = '';
+  String _status = '';
   final List<String> _imageUrls = []; // Lưu trữ URL ảnh
   final List<String> _variants = [];
   double _rating = 1.0;
@@ -37,6 +38,7 @@ class _AddProductScreenState extends State<AddProductScreen> {
         description: _description,
         price: _price,
         category: _category,
+        status: _status,
         images: _imageUrls,
         variants: _variants,
         rating: _rating,
@@ -120,6 +122,16 @@ class _AddProductScreenState extends State<AddProductScreen> {
                   validator: (value) {
                     if (value == null || value.isEmpty) {
                       return 'Please enter product category';
+                    }
+                    return null;
+                  },
+                  onSaved: (value) => _category = value!,
+                ),
+                TextFormField(
+                  decoration: InputDecoration(labelText: 'Status'),
+                  validator: (value) {
+                    if (value == null || value.isEmpty) {
+                      return 'Please enter product status';
                     }
                     return null;
                   },

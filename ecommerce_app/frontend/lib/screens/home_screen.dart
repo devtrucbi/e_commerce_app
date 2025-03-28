@@ -21,13 +21,54 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('E-shop'),
-        backgroundColor: const Color.fromARGB(255, 210, 45, 34),
+        backgroundColor: const Color.fromARGB(255, 234, 150, 144),
+        title: Row(
+          children: [
+            // Logo ở góc trái
+            Image.asset(
+              'assets/images/logo.png', // Đường dẫn tới ảnh logo
+              height: 60, // Kích thước logo
+              width: 90,
+            ),
+            SizedBox(width: 20), // Khoảng cách giữa logo và thanh tìm kiếm
+            // Thanh tìm kiếm ở giữa
+            Container(
+              width: 240, // Chiều rộng của thanh tìm kiếm
+              height: 40, // Chiều cao của thanh tìm kiếm
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(30),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.grey.withOpacity(0.5),
+                    spreadRadius: 1,
+                    blurRadius: 3,
+                    offset: Offset(0, 3),
+                  ),
+                ],
+              ),
+              child: TextField(
+                decoration: InputDecoration(
+                  filled: true,
+                  hintText: 'Search products...',
+                  hintStyle: TextStyle(
+                    fontSize: 14,
+                  ), // Giảm kích thước chữ trong thanh tìm kiếm
+                  prefixIcon: Icon(Icons.search, color: Colors.grey),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(30),
+                    borderSide: BorderSide.none,
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
         actions: [
           IconButton(
-            icon: Icon(Icons.search),
+            icon: Icon(Icons.shopping_cart, color: Colors.red),
             onPressed: () {
-              // Mở màn hình tìm kiếm
+              // Mở màn hình giỏ hàng
             },
           ),
         ],
@@ -94,9 +135,9 @@ class _HomeScreenState extends State<HomeScreen> {
               ),
             ),
 
-            // Hiển thị sản phẩm
+            // Hiển thị sản phẩm (scroll dọc)
             Padding(
-              padding: const EdgeInsets.all(16.0),
+              padding: const EdgeInsets.all(15.0),
               child: FutureBuilder<List<Map<String, dynamic>>>(
                 future: _products,
                 builder: (context, snapshot) {
@@ -116,9 +157,10 @@ class _HomeScreenState extends State<HomeScreen> {
                   return GridView.builder(
                     shrinkWrap: true, // Điều chỉnh lại GridView
                     gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                      crossAxisCount: 2, // Tăng số cột lên 3
+                      crossAxisCount: 2,
                       crossAxisSpacing: 8.0,
                       mainAxisSpacing: 8.0,
+                      childAspectRatio: 0.7,
                     ),
                     itemCount: products.length,
                     itemBuilder: (context, index) {
@@ -194,8 +236,12 @@ class ProductCard extends StatelessWidget {
           Padding(
             padding: const EdgeInsets.all(8.0),
             child: Text(
-              'NGN ${price.toString()}',
-              style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
+              '${price.toString()} VNĐ',
+              style: TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.bold,
+                color: Colors.red,
+              ),
             ),
           ),
         ],
