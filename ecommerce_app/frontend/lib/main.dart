@@ -106,7 +106,7 @@ class _MainScreenState extends State<MainScreen> {
                 ),
               ),
               child: Icon(
-                Icons.list,
+                Icons.assignment_outlined,
                 color: _selectedIndex == 2 ? Colors.red : Colors.black,
               ),
             ),

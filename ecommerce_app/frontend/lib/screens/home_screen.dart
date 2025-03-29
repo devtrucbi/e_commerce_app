@@ -1,5 +1,6 @@
 import 'package:ecommerce_app/services/api_service.dart';
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -10,6 +11,18 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
   late Future<List<Map<String, dynamic>>> _products;
+
+  // Danh sách các danh mục sản phẩm
+  final List<String> _categories = [
+    "Sản phẩm giảm giá",
+    "Sản phẩm mới",
+    "Sản phẩm bán chạy",
+    "Laptop",
+    "Màn hình",
+    "Ổ cứng",
+    "Ram",
+    "PC",
+  ];
 
   @override
   void initState() {
@@ -93,157 +106,218 @@ class _HomeScreenState extends State<HomeScreen> {
               ),
             ),
 
-            // Danh mục sản phẩm cuộn ngang
-            Padding(
-              padding: const EdgeInsets.symmetric(vertical: 16.0),
-              child: SingleChildScrollView(
-                scrollDirection: Axis.horizontal, // Cuộn ngang
-                child: Row(
-                  children: [
-                    CategoryCard(
-                      imageUrl:
-                          'https://static.vecteezy.com/system/resources/previews/026/153/161/non_2x/laptop-icon-for-graphic-and-web-design-device-icon-vector.jpg',
-                      label: 'Laptop',
-                    ),
-                    CategoryCard(
-                      imageUrl:
-                          'https://static.vecteezy.com/system/resources/previews/019/549/367/non_2x/desktop-pc-icon-line-isolated-on-white-background-black-flat-thin-icon-on-modern-outline-style-linear-symbol-and-editable-stroke-simple-and-pixel-perfect-stroke-illustration-vector.jpg',
-                      label: 'PC',
-                    ),
-                    CategoryCard(
-                      imageUrl:
-                          'https://static.vecteezy.com/system/resources/previews/006/507/888/non_2x/monitor-icon-screen-icon-black-and-white-monitor-icon-monitor-isolated-on-white-background-free-vector.jpg',
-                      label: 'Màn hình',
-                    ),
-                    CategoryCard(
-                      imageUrl:
-                          'https://static.vecteezy.com/system/resources/previews/000/357/784/non_2x/ram-vector-icon.jpg',
-                      label: 'Linh kiện',
-                    ),
-                    CategoryCard(
-                      imageUrl:
-                          'https://static.vecteezy.com/system/resources/previews/000/357/784/non_2x/ram-vector-icon.jpg',
-                      label: 'Linh kiện',
-                    ),
-                    CategoryCard(
-                      imageUrl:
-                          'https://static.vecteezy.com/system/resources/previews/000/357/784/non_2x/ram-vector-icon.jpg',
-                      label: 'Linh kiện',
-                    ),
-                  ],
-                ),
-              ),
-            ),
-
-            // Hiển thị sản phẩm (scroll dọc)
-            Padding(
-              padding: const EdgeInsets.all(15.0),
-              child: FutureBuilder<List<Map<String, dynamic>>>(
-                future: _products,
-                builder: (context, snapshot) {
-                  if (snapshot.connectionState == ConnectionState.waiting) {
-                    return Center(child: CircularProgressIndicator());
-                  }
-
-                  if (snapshot.hasError) {
-                    return Center(child: Text('Error: ${snapshot.error}'));
-                  }
-
-                  if (!snapshot.hasData || snapshot.data!.isEmpty) {
-                    return Center(child: Text('No products available'));
-                  }
-
-                  final products = snapshot.data!;
-                  return GridView.builder(
-                    shrinkWrap: true, // Điều chỉnh lại GridView
-                    gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                      crossAxisCount: 2,
-                      crossAxisSpacing: 8.0,
-                      mainAxisSpacing: 8.0,
-                      childAspectRatio: 0.7,
-                    ),
-                    itemCount: products.length,
-                    itemBuilder: (context, index) {
-                      final product = products[index];
-                      return ProductCard(
-                        name: product['name'],
-                        imageUrl:
-                            product['images'][0], // Chọn hình ảnh đầu tiên
-                        price: product['price'],
-                      );
-                    },
-                  );
-                },
-              ),
-            ),
+            // Hiển thị danh mục sản phẩm với cuộn ngang
+            for (var category in _categories) _buildCategorySection(category),
           ],
         ),
       ),
     );
   }
-}
 
-class CategoryCard extends StatelessWidget {
-  final String imageUrl;
-  final String label;
-
-  const CategoryCard({super.key, required this.imageUrl, required this.label});
-
-  @override
-  Widget build(BuildContext context) {
+  // Hàm hiển thị phần danh mục sản phẩm cuộn ngang
+  Widget _buildCategorySection(String category) {
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 8.0),
+      padding: const EdgeInsets.symmetric(vertical: 16.0),
       child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          CircleAvatar(radius: 40, backgroundImage: NetworkImage(imageUrl)),
+          Padding(
+            padding: const EdgeInsets.only(left: 16.0),
+            child: Text(
+              category,
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+            ),
+          ),
           SizedBox(height: 8),
-          Text(label, style: TextStyle(fontSize: 16)),
+          Container(
+            width: double.infinity,
+            height: 300,
+            child: FutureBuilder<List<Map<String, dynamic>>>(
+              future: _products,
+              builder: (context, snapshot) {
+                if (snapshot.connectionState == ConnectionState.waiting) {
+                  return Center(child: CircularProgressIndicator());
+                }
+
+                if (snapshot.hasError) {
+                  return Center(child: Text('Error: ${snapshot.error}'));
+                }
+
+                if (!snapshot.hasData || snapshot.data!.isEmpty) {
+                  return Center(child: Text('No products available'));
+                }
+
+                final products = snapshot.data!;
+
+                // Lọc sản phẩm theo category
+                List<Map<String, dynamic>> filteredProducts = [];
+                if (category == "Sản phẩm giảm giá") {
+                  filteredProducts =
+                      products
+                          .where(
+                            (product) =>
+                                product['discount'] != null &&
+                                product['discount'] > 0,
+                          )
+                          .toList();
+                } else if (category == "Sản phẩm mới") {
+                  filteredProducts =
+                      products
+                          .where((product) => product['status'] == "Mới")
+                          .toList();
+                } else if (category == "Laptop") {
+                  filteredProducts =
+                      products
+                          .where((product) => product['category'] == "Laptop")
+                          .toList();
+                } else if (category == "Sản phẩm bán chạy") {
+                  filteredProducts =
+                      products
+                          .where((product) => product['sold'] > 10)
+                          .toList();
+                } else {
+                  filteredProducts =
+                      products.where((product) {
+                        return product['categories'] != null &&
+                            product['categories'].contains(category);
+                      }).toList();
+                }
+
+                return ListView.builder(
+                  scrollDirection: Axis.horizontal,
+                  itemCount: filteredProducts.length,
+                  itemBuilder: (context, index) {
+                    final product = filteredProducts[index];
+                    // print(product['oldPrice']); // Để kiểm tra giá trị oldPrice
+                    // print(product['newPrice']); // Để kiểm tra giá trị newPrice
+                    return Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 8.0),
+                      child: Container(
+                        width: 230,
+                        child: ProductCard(
+                          name: product['name'],
+                          imageUrl: product['images'][0],
+                          oldPrice: product['oldprice'] ?? 0,
+                          newPrice: product['newprice'] ?? 0,
+                          discount: product['discount'].toString(),
+                        ),
+                      ),
+                    );
+                  },
+                );
+              },
+            ),
+          ),
         ],
       ),
     );
   }
 }
 
+String formatPrice(int price) {
+  final NumberFormat format = NumberFormat(
+    '#,###',
+    'vi_VN',
+  ); // Định dạng theo kiểu Việt Nam
+  return format.format(price);
+}
+
 class ProductCard extends StatelessWidget {
   final String name;
   final String imageUrl;
-  final int price;
+  final int oldPrice;
+  final int newPrice;
+  final String discount;
 
   const ProductCard({
     super.key,
     required this.name,
     required this.imageUrl,
-    required this.price,
+    required this.oldPrice,
+    required this.newPrice,
+    required this.discount,
   });
 
   @override
   Widget build(BuildContext context) {
     return Card(
       elevation: 4,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Image.network(
-            imageUrl,
-            height: 120,
-            width: double.infinity,
-            fit: BoxFit.cover,
+          // Ảnh sản phẩm
+          Align(
+            alignment: Alignment.center,
+            child: Image.network(
+              imageUrl,
+              height: 120,
+              width: double.infinity,
+              fit: BoxFit.cover,
+            ),
           ),
+          SizedBox(height: 8),
+
+          // Tên sản phẩm (hiển thị 2 dòng, nếu dài hơn sẽ có dấu ba chấm)
           Padding(
-            padding: const EdgeInsets.all(8.0),
-            child: Text(name, style: TextStyle(fontSize: 16)),
-          ),
-          Padding(
-            padding: const EdgeInsets.all(8.0),
+            padding: const EdgeInsets.symmetric(horizontal: 8.0),
             child: Text(
-              '${price.toString()} VNĐ',
+              name,
+              style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+              overflow: TextOverflow.ellipsis, // Thêm dấu ba chấm khi tên dài
+              maxLines: 2, // Giới hạn tối đa 2 dòng
+            ),
+          ),
+          SizedBox(height: 20),
+
+          // Hiển thị giá cũ với dấu gạch ngang chỉ khi có discount
+          if (int.tryParse(discount) != null && int.parse(discount) > 0)
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 8.0),
+              child: Text(
+                '${formatPrice(oldPrice)} VNĐ',
+                style: TextStyle(
+                  fontSize: 16,
+                  color: Colors.grey,
+                  decoration: TextDecoration.lineThrough, // Gạch ngang
+                ),
+              ),
+            ),
+          SizedBox(height: 2),
+
+          // Hiển thị giá mới
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 8.0),
+            child: Text(
+              '${formatPrice(newPrice)} VNĐ',
               style: TextStyle(
-                fontSize: 14,
+                fontSize: 16,
                 fontWeight: FontWeight.bold,
                 color: Colors.red,
               ),
             ),
           ),
+
+          // Hiển thị phần trăm giảm giá chỉ khi có discount
+          if (int.tryParse(discount) != null && int.parse(discount) > 0)
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 8.0),
+              child: Container(
+                padding: EdgeInsets.symmetric(horizontal: 6, vertical: 3),
+                decoration: BoxDecoration(
+                  color: Colors.red,
+                  borderRadius: BorderRadius.circular(4),
+                ),
+                child: Text(
+                  '-$discount%',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 12,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
+            ),
         ],
       ),
     );

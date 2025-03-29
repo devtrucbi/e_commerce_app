@@ -1,16 +1,19 @@
 const mongoose = require('mongoose');
 
-// Định nghĩa schema cho sản phẩm
 const productSchema = new mongoose.Schema({
   name: { type: String, required: true },
   description: { type: String, required: true },
-  price: { type: Number, required: true },
   category: { type: String, required: true },
   status: { type: String, required: true },
-  images: [String],    // Mảng chứa URL ảnh
-  variants: [String],  // Các biến thể của sản phẩm (màu sắc, kích thước, v.v.)
-  rating: { type: Number, min: 1, max: 5, default: 1 },
+  discount: { type: Number, default: 0, max: 50 },  // Discount, with a max limit of 50%
+  oldprice: { type: Number, required: true },
+  newprice: { type: Number, required: true },
+  images: { type: [String], required: true },
+  variants: { type: [String] },
+  rating: { type: Number, default: 0 },
+  stock: { type: Number, default: 0 }, // Thêm trường số lượng tồn kho
+  sold: { type: Number, default: 0 },
 });
 
-// Tạo mô hình sản phẩm từ schema
-module.exports = mongoose.model('Product', productSchema);
+const Product = mongoose.model('Product', productSchema);
+module.exports = Product;

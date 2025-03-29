@@ -1,3 +1,4 @@
+import 'package:ecommerce_app/screens/product_management.dart';
 import 'package:flutter/material.dart';
 
 class CouponScreen extends StatelessWidget {
@@ -7,10 +8,55 @@ class CouponScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('Coupons'),
-        backgroundColor: Color.fromARGB(255, 210, 45, 34),
+        backgroundColor: const Color.fromARGB(255, 234, 150, 144),
+        title: Row(
+          children: [
+            // Logo ở góc trái
+            Image.asset(
+              'assets/images/logo.png', // Đường dẫn tới ảnh logo
+              height: 60, // Kích thước logo
+              width: 90,
+            ),
+            SizedBox(width: 20), // Khoảng cách giữa logo và thanh tìm kiếm
+          ],
+        ),
+        actions: [
+          IconButton(
+            icon: Icon(Icons.shopping_cart, color: Colors.red),
+            onPressed: () {
+              // Mở màn hình giỏ hàng
+            },
+          ),
+        ],
       ),
-      body: Center(child: Text('Here are some coupons for you!')),
+      body: Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            // Hiển thị thông tin mã giảm giá
+            Text('Here are some coupons for you!'),
+
+            // Nút chuyển hướng đến AddProductScreen
+            SizedBox(height: 20),
+            ElevatedButton(
+              onPressed: () {
+                // Chuyển đến AddProductScreen
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => const ProductManagementScreen(),
+                  ),
+                );
+              },
+              child: Text('Go to Add Product Screen'),
+              style: ElevatedButton.styleFrom(
+                minimumSize: Size(200, 50), // Kích thước nút
+                textStyle: TextStyle(fontSize: 18),
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }
