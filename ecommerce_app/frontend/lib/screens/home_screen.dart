@@ -1,3 +1,4 @@
+import 'package:ecommerce_app/screens/product_details_screen.dart';
 import 'package:ecommerce_app/services/api_service.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
@@ -66,8 +67,12 @@ class _HomeScreenState extends State<HomeScreen> {
                   hintText: 'Search products...',
                   hintStyle: TextStyle(
                     fontSize: 14,
+                    color: Color.fromARGB(255, 234, 150, 144),
                   ), // Giảm kích thước chữ trong thanh tìm kiếm
-                  prefixIcon: Icon(Icons.search, color: Colors.grey),
+                  prefixIcon: Icon(
+                    Icons.search,
+                    color: Color.fromARGB(255, 234, 150, 144),
+                  ),
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(30),
                     borderSide: BorderSide.none,
@@ -175,6 +180,11 @@ class _HomeScreenState extends State<HomeScreen> {
                       products
                           .where((product) => product['sold'] > 10)
                           .toList();
+                } else if (category == "PC") {
+                  filteredProducts =
+                      products
+                          .where((product) => product['category'] == "PC")
+                          .toList();
                 } else {
                   filteredProducts =
                       products.where((product) {
@@ -192,14 +202,29 @@ class _HomeScreenState extends State<HomeScreen> {
                     // print(product['newPrice']); // Để kiểm tra giá trị newPrice
                     return Padding(
                       padding: const EdgeInsets.symmetric(horizontal: 8.0),
-                      child: Container(
-                        width: 230,
-                        child: ProductCard(
-                          name: product['name'],
-                          imageUrl: product['images'][0],
-                          oldPrice: product['oldprice'] ?? 0,
-                          newPrice: product['newprice'] ?? 0,
-                          discount: product['discount'].toString(),
+                      child: GestureDetector(
+                        onTap: () {
+                          String productId = product['_id'].toString();
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder:
+                                  (context) =>
+                                      ProductDetailScreen(productId: productId),
+                            ),
+                          );
+                        },
+
+                        child: Container(
+                          width: 230,
+                          child: ProductCard(
+                            name: product['name'],
+                            imageUrl: product['images'][0],
+                            oldPrice: product['oldprice'] ?? 0,
+                            newPrice: product['newprice'] ?? 0,
+                            discount: product['discount'].toString(),
+                            stock: product['stock'] ?? 0,
+                          ),
                         ),
                       ),
                     );
@@ -228,6 +253,7 @@ class ProductCard extends StatelessWidget {
   final int oldPrice;
   final int newPrice;
   final String discount;
+  final int stock;
 
   const ProductCard({
     super.key,
@@ -236,6 +262,7 @@ class ProductCard extends StatelessWidget {
     required this.oldPrice,
     required this.newPrice,
     required this.discount,
+    required this.stock,
   });
 
   @override
@@ -315,6 +342,31 @@ class ProductCard extends StatelessWidget {
                     fontSize: 12,
                     fontWeight: FontWeight.bold,
                   ),
+                ),
+              ),
+            ),
+          if (stock > 0)
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 8.0),
+              child: Text(
+                "Còn hàng",
+                style: TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.green,
+                ),
+              ),
+            ),
+          // Nếu không còn hàng
+          if (stock <= 0)
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 8.0),
+              child: Text(
+                "Hết hàng",
+                style: TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.red,
                 ),
               ),
             ),

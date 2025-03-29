@@ -24,6 +24,23 @@ class ApiService {
     }
   }
 
+  // Lấy chi tiết sản phẩm theo ID
+  static Future<Map<String, dynamic>> getProductDetail(String productId) async {
+    try {
+      var uri = Uri.parse('$baseUrl/products/${Uri.encodeFull(productId)}');
+      var response = await http.get(uri);
+
+      if (response.statusCode == 200) {
+        return json.decode(response.body);
+      } else {
+        throw Exception('Failed to load product details');
+      }
+    } catch (e) {
+      // print('Error fetching product detail: $e');
+      throw Exception('Error fetching product detail');
+    }
+  }
+
   static Future<List<Map<String, dynamic>>> fetchProductsByCategory(
     String category,
   ) async {

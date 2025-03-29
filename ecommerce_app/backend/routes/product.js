@@ -8,6 +8,8 @@ router.get('/', ProductController.getProducts);
 // Lấy sản phẩm theo danh mục
 router.get('/category/:category', ProductController.getProductsByCategory);
 
+router.get('/:_id', ProductController.getProductById)
+
 // Thêm sản phẩm mới
 router.post('/', ProductController.addProduct);
 
