@@ -1,48 +1,22 @@
 const express = require('express');
-const bcrypt = require('bcryptjs');
-const jwt = require('jsonwebtoken');
-const User = require('../models/user');
-
 const router = express.Router();
+const UserController = require('../controllers/authController');
+const isAuthenticated = require('../middleware/isAuthenticated'); // Import middleware xác thực người dùng
+const isAdmin = require('../middleware/isAdmin'); // Import middleware kiểm tra quyền admin
 
 // Đăng ký người dùng
-router.post('/register', async (req, res) => {
-  const { email, password, name, address } = req.body;
-
-  try {
-    const user = await User.findOne({ email });
-    if (user) return res.status(400).json({ message: 'User already exists' });
-
-    const hashedPassword = await bcrypt.hash(password, 10);
-
-    const newUser = new User({ email, password: hashedPassword, name, address });
-    await newUser.save();
-
-    const token = jwt.sign({ id: newUser._id }, 'secret', { expiresIn: '1h' });
-
-    res.status(201).json({ token });
-  } catch (error) {
-    res.status(500).json({ message: 'Error registering user', error });
-  }
-});
+router.post('/register', UserController.registerUser);
 
 // Đăng nhập người dùng
-router.post('/login', async (req, res) => {
-  const { email, password } = req.body;
+router.post('/login', UserController.loginUser);
+//Lấy thông tin người dùng
+router.get('/me', isAuthenticated, UserController.getUserInfo);
 
-  try {
-    const user = await User.findOne({ email });
-    if (!user) return res.status(400).json({ message: 'Invalid credentials' });
+// Cập nhật hồ sơ người dùng (chỉ người dùng đã đăng nhập hoặc admin có thể thay đổi)
+router.put('/users/:id', isAuthenticated, UserController.updateUserProfile);
 
-    const isMatch = await bcrypt.compare(password, user.password);
-    if (!isMatch) return res.status(400).json({ message: 'Invalid credentials' });
-
-    const token = jwt.sign({ id: user._id }, 'secret', { expiresIn: '1h' });
-
-    res.status(200).json({ token });
-  } catch (error) {
-    res.status(500).json({ message: 'Error logging in', error });
-  }
-});
+// Các route quản trị viên (chỉ admin có quyền truy cập)
+router.get('/users', isAuthenticated, isAdmin, UserController.getAllUsers);  // Lấy danh sách người dùng
+router.delete('/users/:id', isAuthenticated, isAdmin, UserController.deleteUser);  // Xóa người dùng
 
 module.exports = router;

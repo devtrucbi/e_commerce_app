@@ -1,5 +1,8 @@
+import 'package:ecommerce_app/screens/cart_screen.dart';
 import 'package:ecommerce_app/screens/product_details_screen.dart';
 import 'package:ecommerce_app/services/api_service.dart';
+import 'package:ecommerce_app/services/database_helper.dart';
+import 'package:ecommerce_app/services/datasync_service.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
@@ -11,7 +14,7 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
-  late Future<List<Map<String, dynamic>>> _products;
+  Future<List<Map<String, dynamic>>>? _products;
 
   // Danh sách các danh mục sản phẩm
   final List<String> _categories = [
@@ -28,7 +31,16 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   void initState() {
     super.initState();
-    _products = ApiService.getProducts(); // Gọi API để lấy danh sách sản phẩm
+    _syncProducts;
+  }
+
+  // Đồng bộ dữ liệu từ API và lưu vào SQLite
+  Future<void> _syncProducts() async {
+    await DataSyncService.syncData();
+    setState(() {
+      // Gán giá trị cho _products sau khi đồng bộ dữ liệu
+      _products = DatabaseHelper.instance.getProducts();
+    });
   }
 
   @override
@@ -38,17 +50,16 @@ class _HomeScreenState extends State<HomeScreen> {
         backgroundColor: const Color.fromARGB(255, 234, 150, 144),
         title: Row(
           children: [
-            // Logo ở góc trái
             Image.asset(
               'assets/images/logo.png', // Đường dẫn tới ảnh logo
-              height: 60, // Kích thước logo
+              height: 60,
               width: 90,
             ),
-            SizedBox(width: 20), // Khoảng cách giữa logo và thanh tìm kiếm
+            SizedBox(width: 20),
             // Thanh tìm kiếm ở giữa
             Container(
-              width: 240, // Chiều rộng của thanh tìm kiếm
-              height: 40, // Chiều cao của thanh tìm kiếm
+              width: 240,
+              height: 40,
               decoration: BoxDecoration(
                 color: Colors.white,
                 borderRadius: BorderRadius.circular(30),
@@ -68,7 +79,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   hintStyle: TextStyle(
                     fontSize: 14,
                     color: Color.fromARGB(255, 234, 150, 144),
-                  ), // Giảm kích thước chữ trong thanh tìm kiếm
+                  ),
                   prefixIcon: Icon(
                     Icons.search,
                     color: Color.fromARGB(255, 234, 150, 144),
@@ -87,40 +98,96 @@ class _HomeScreenState extends State<HomeScreen> {
             icon: Icon(Icons.shopping_cart, color: Colors.red),
             onPressed: () {
               // Mở màn hình giỏ hàng
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => CartScreen()),
+              );
             },
           ),
         ],
       ),
-      body: SingleChildScrollView(
-        child: Column(
-          children: [
-            // Banner khuyến mãi
-            Padding(
-              padding: const EdgeInsets.all(16.0),
-              child: Container(
-                height: 200,
-                decoration: BoxDecoration(
-                  image: DecorationImage(
-                    image: AssetImage(
-                      'assets/images/banner.png',
-                    ), // Hình ảnh banner
-                    fit: BoxFit.cover,
-                  ),
-                  borderRadius: BorderRadius.circular(8),
-                ),
-              ),
-            ),
+      body: FutureBuilder<List<Map<String, dynamic>>>(
+        future: _products,
+        builder: (context, snapshot) {
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return Center(child: CircularProgressIndicator());
+          }
 
-            // Hiển thị danh mục sản phẩm với cuộn ngang
-            for (var category in _categories) _buildCategorySection(category),
-          ],
-        ),
+          if (snapshot.hasError) {
+            return Center(child: Text('Error: ${snapshot.error}'));
+          }
+
+          if (!snapshot.hasData || snapshot.data!.isEmpty) {
+            return Center(child: Text('No products available'));
+          }
+
+          final products = snapshot.data!;
+
+          return SingleChildScrollView(
+            child: Column(
+              children: [
+                // Banner khuyến mãi
+                Padding(
+                  padding: const EdgeInsets.all(16.0),
+                  child: Container(
+                    height: 200,
+                    decoration: BoxDecoration(
+                      image: DecorationImage(
+                        image: AssetImage('assets/images/banner.png'),
+                        fit: BoxFit.cover,
+                      ),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                  ),
+                ),
+
+                // Hiển thị danh mục sản phẩm với cuộn ngang
+                for (var category in _categories)
+                  _buildCategorySection(category, products),
+              ],
+            ),
+          );
+        },
       ),
     );
   }
 
   // Hàm hiển thị phần danh mục sản phẩm cuộn ngang
-  Widget _buildCategorySection(String category) {
+  Widget _buildCategorySection(
+    String category,
+    List<Map<String, dynamic>> products,
+  ) {
+    List<Map<String, dynamic>> filteredProducts = [];
+
+    if (category == "Sản phẩm giảm giá") {
+      filteredProducts =
+          products
+              .where(
+                (product) =>
+                    product['discount'] != null && product['discount'] > 0,
+              )
+              .toList();
+    } else if (category == "Sản phẩm mới") {
+      filteredProducts =
+          products.where((product) => product['status'] == "Mới").toList();
+    } else if (category == "Laptop") {
+      filteredProducts =
+          products.where((product) => product['category'] == "Laptop").toList();
+    } else if (category == "Sản phẩm bán chạy") {
+      filteredProducts =
+          products.where((product) => product['sold'] > 10).toList();
+    } else if (category == "PC") {
+      filteredProducts =
+          products.where((product) => product['category'] == "PC").toList();
+    } else {
+      filteredProducts =
+          products.where((product) {
+            return product['categories'] != null &&
+                product['categories'].contains(category);
+          }).toList();
+    }
+
+    // Return the category section widget
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 16.0),
       child: Column(
@@ -137,98 +204,37 @@ class _HomeScreenState extends State<HomeScreen> {
           Container(
             width: double.infinity,
             height: 300,
-            child: FutureBuilder<List<Map<String, dynamic>>>(
-              future: _products,
-              builder: (context, snapshot) {
-                if (snapshot.connectionState == ConnectionState.waiting) {
-                  return Center(child: CircularProgressIndicator());
-                }
-
-                if (snapshot.hasError) {
-                  return Center(child: Text('Error: ${snapshot.error}'));
-                }
-
-                if (!snapshot.hasData || snapshot.data!.isEmpty) {
-                  return Center(child: Text('No products available'));
-                }
-
-                final products = snapshot.data!;
-
-                // Lọc sản phẩm theo category
-                List<Map<String, dynamic>> filteredProducts = [];
-                if (category == "Sản phẩm giảm giá") {
-                  filteredProducts =
-                      products
-                          .where(
-                            (product) =>
-                                product['discount'] != null &&
-                                product['discount'] > 0,
-                          )
-                          .toList();
-                } else if (category == "Sản phẩm mới") {
-                  filteredProducts =
-                      products
-                          .where((product) => product['status'] == "Mới")
-                          .toList();
-                } else if (category == "Laptop") {
-                  filteredProducts =
-                      products
-                          .where((product) => product['category'] == "Laptop")
-                          .toList();
-                } else if (category == "Sản phẩm bán chạy") {
-                  filteredProducts =
-                      products
-                          .where((product) => product['sold'] > 10)
-                          .toList();
-                } else if (category == "PC") {
-                  filteredProducts =
-                      products
-                          .where((product) => product['category'] == "PC")
-                          .toList();
-                } else {
-                  filteredProducts =
-                      products.where((product) {
-                        return product['categories'] != null &&
-                            product['categories'].contains(category);
-                      }).toList();
-                }
-
-                return ListView.builder(
-                  scrollDirection: Axis.horizontal,
-                  itemCount: filteredProducts.length,
-                  itemBuilder: (context, index) {
-                    final product = filteredProducts[index];
-                    // print(product['oldPrice']); // Để kiểm tra giá trị oldPrice
-                    // print(product['newPrice']); // Để kiểm tra giá trị newPrice
-                    return Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 8.0),
-                      child: GestureDetector(
-                        onTap: () {
-                          String productId = product['_id'].toString();
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder:
-                                  (context) =>
-                                      ProductDetailScreen(productId: productId),
-                            ),
-                          );
-                        },
-
-                        child: Container(
-                          width: 230,
-                          child: ProductCard(
-                            name: product['name'],
-                            imageUrl: product['images'][0],
-                            oldPrice: product['oldprice'] ?? 0,
-                            newPrice: product['newprice'] ?? 0,
-                            discount: product['discount'].toString(),
-                            stock: product['stock'] ?? 0,
-                          ),
+            child: ListView.builder(
+              scrollDirection: Axis.horizontal,
+              itemCount: filteredProducts.length,
+              itemBuilder: (context, index) {
+                final product = filteredProducts[index];
+                return Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 8.0),
+                  child: GestureDetector(
+                    onTap: () {
+                      String productId = product['_id'].toString();
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder:
+                              (context) =>
+                                  ProductDetailScreen(productId: productId),
                         ),
+                      );
+                    },
+                    child: Container(
+                      width: 230,
+                      child: ProductCard(
+                        name: product['name'],
+                        imageUrl: product['images'][0],
+                        oldPrice: product['oldprice'] ?? 0,
+                        newPrice: product['newprice'] ?? 0,
+                        discount: product['discount'].toString(),
+                        stock: product['stock'] ?? 0,
                       ),
-                    );
-                  },
+                    ),
+                  ),
                 );
               },
             ),
@@ -237,14 +243,6 @@ class _HomeScreenState extends State<HomeScreen> {
       ),
     );
   }
-}
-
-String formatPrice(int price) {
-  final NumberFormat format = NumberFormat(
-    '#,###',
-    'vi_VN',
-  ); // Định dạng theo kiểu Việt Nam
-  return format.format(price);
 }
 
 class ProductCard extends StatelessWidget {
@@ -273,7 +271,6 @@ class ProductCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Ảnh sản phẩm
           Align(
             alignment: Alignment.center,
             child: Image.network(
@@ -284,20 +281,16 @@ class ProductCard extends StatelessWidget {
             ),
           ),
           SizedBox(height: 8),
-
-          // Tên sản phẩm (hiển thị 2 dòng, nếu dài hơn sẽ có dấu ba chấm)
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 8.0),
             child: Text(
               name,
               style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-              overflow: TextOverflow.ellipsis, // Thêm dấu ba chấm khi tên dài
-              maxLines: 2, // Giới hạn tối đa 2 dòng
+              overflow: TextOverflow.ellipsis,
+              maxLines: 2,
             ),
           ),
           SizedBox(height: 20),
-
-          // Hiển thị giá cũ với dấu gạch ngang chỉ khi có discount
           if (int.tryParse(discount) != null && int.parse(discount) > 0)
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 8.0),
@@ -306,13 +299,11 @@ class ProductCard extends StatelessWidget {
                 style: TextStyle(
                   fontSize: 16,
                   color: Colors.grey,
-                  decoration: TextDecoration.lineThrough, // Gạch ngang
+                  decoration: TextDecoration.lineThrough,
                 ),
               ),
             ),
           SizedBox(height: 2),
-
-          // Hiển thị giá mới
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 8.0),
             child: Text(
@@ -324,8 +315,6 @@ class ProductCard extends StatelessWidget {
               ),
             ),
           ),
-
-          // Hiển thị phần trăm giảm giá chỉ khi có discount
           if (int.tryParse(discount) != null && int.parse(discount) > 0)
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 8.0),
@@ -357,7 +346,6 @@ class ProductCard extends StatelessWidget {
                 ),
               ),
             ),
-          // Nếu không còn hàng
           if (stock <= 0)
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 8.0),
@@ -374,4 +362,9 @@ class ProductCard extends StatelessWidget {
       ),
     );
   }
+}
+
+String formatPrice(int price) {
+  final NumberFormat format = NumberFormat('#,###', 'vi_VN');
+  return format.format(price);
 }

@@ -1,0 +1,93 @@
+Kiểm tra trạng thái đăng nhập của người dùng
+  Future<bool> _isUserLoggedIn() async {
+    final prefs = await SharedPreferences.getInstance();
+    final token = prefs.getString(
+      'userToken',
+    ); // Lấy token từ SharedPreferences
+    return token != null && token.isNotEmpty;
+  }
+
+  Future<void> _checkUserStatus(BuildContext context) async {
+    final prefs = await SharedPreferences.getInstance();
+    final token = prefs.getString('userToken');
+
+    if (token == null || token.isEmpty) {
+      // Nếu chưa đăng nhập, hiển thị hộp thoại xác nhận
+      _showLoginDialog(context);
+    } else {
+      // Nếu đã đăng nhập, kiểm tra tính hợp lệ của token từ backend
+      final response = await http.get(
+        Uri.parse('http://localhost:5001/api/checkAuth'),
+        headers: {
+          'Authorization': 'Bearer $token', // Gửi token trong header
+        },
+      );
+
+      if (response.statusCode == 200) {
+        // Nếu token hợp lệ, điều hướng đến CartScreen
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (context) => CartScreen()),
+        );
+      } else {
+        // Nếu token không hợp lệ, hiển thị hộp thoại xác nhận
+        _showLoginDialog(context);
+      }
+    }
+  }
+
+  // Hiển thị hộp thoại thông báo nếu người dùng chưa đăng nhập
+  void _showLoginDialog(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: Text(
+            'Thông báo',
+            style: TextStyle(
+              fontWeight: FontWeight.bold,
+              color: Colors.red, // Màu tiêu đề
+            ),
+          ),
+          content: Text(
+            'Bạn đang chưa đăng nhập, vui lòng đăng nhập để sử dụng chức năng',
+            style: TextStyle(fontSize: 16),
+          ),
+          actions: <Widget>[
+            // Nút Đóng
+            TextButton(
+              onPressed: () {
+                Navigator.pop(context); // Đóng hộp thoại
+              },
+              child: Text(
+                'Đóng',
+                style: TextStyle(
+                  color: Colors.grey, // Màu chữ nút Đóng
+                ),
+              ),
+            ),
+            // Nút Đăng nhập
+            ElevatedButton(
+              onPressed: () {
+                // Chuyển hướng đến trang đăng nhập và loại bỏ tất cả các route cũ
+                Navigator.pushNamedAndRemoveUntil(
+                  context,
+                  '/login',
+                  (Route<dynamic> route) =>
+                      false, // Loại bỏ tất cả các route trước đó
+                );
+              },
+              style: ElevatedButton.styleFrom(
+                foregroundColor: Colors.white,
+                backgroundColor: Colors.red, // Màu chữ trắng
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(30), // Bo góc nút
+                ),
+              ),
+              child: Text('Đăng nhập', style: TextStyle(fontSize: 16)),
+            ),
+          ],
+        );
+      },
+    );
+  }

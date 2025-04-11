@@ -30,11 +30,27 @@ const getProductsByCategory = async (req, res) => {
 
 // 3. Thêm mới một sản phẩm
 const addProduct = async (req, res) => {
-  const { 
-    name, description, category, status, discount, oldprice, images, 
-    variants, rating, stock, sold, cpu, ram, vga, storage, monitor_size, 
-    screen_resolution, refresh_rate 
+  const {
+    name,
+    description,
+    category,
+    status,
+    discount,
+    oldprice,
+    images,
+    variants,
+    rating,
+    stock,
+    sold,
+    cpu,
+    ram,
+    vga,
+    storage,
+    monitor_size,
+    screen_resolution,  // Thêm trường screenResolution
+    refresh_rate,       // Thêm trường refreshRate
   } = req.body;
+
 
   const newPrice = oldprice - (oldprice * (discount / 100));  // Tính toán giá mới khi có giảm giá
 
@@ -198,6 +214,18 @@ const updateProductStock = async (req, res) => {
   }
 };
 
+const getReviewofProduct = async (req, res) => {
+  try {
+    const product = await Product.findById(req.params.id);
+    if (!product) {
+      return res.status(404).json({ message: 'Product not found' });
+    }
+    res.json(product.reviews);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
 
 module.exports = {
   getProducts,
@@ -210,4 +238,5 @@ module.exports = {
   getProductsByPrice,
   getProductsByStock,
   updateProductStock,
+  getReviewofProduct,
 };

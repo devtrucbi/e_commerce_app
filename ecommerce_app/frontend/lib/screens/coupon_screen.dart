@@ -1,4 +1,6 @@
+import 'package:ecommerce_app/screens/cart_screen.dart';
 import 'package:ecommerce_app/screens/product_management.dart';
+import 'package:ecommerce_app/screens/test_screen.dart';
 import 'package:flutter/material.dart';
 
 class CouponScreen extends StatelessWidget {
@@ -24,7 +26,10 @@ class CouponScreen extends StatelessWidget {
           IconButton(
             icon: Icon(Icons.shopping_cart, color: Colors.red),
             onPressed: () {
-              // Mở màn hình giỏ hàng
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => CartScreen()),
+              );
             },
           ),
         ],
@@ -43,9 +48,7 @@ class CouponScreen extends StatelessWidget {
                 // Chuyển đến AddProductScreen
                 Navigator.push(
                   context,
-                  MaterialPageRoute(
-                    builder: (context) => const ProductManagementScreen(),
-                  ),
+                  MaterialPageRoute(builder: (context) => ProductListScreen()),
                 );
               },
               child: Text('Go to Add Product Screen'),

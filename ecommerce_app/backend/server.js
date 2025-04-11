@@ -2,6 +2,8 @@ const express = require('express');
 const mongoose = require('mongoose');
 const cors = require('cors');
 const productRoutes = require('./routes/product.js');
+const userRoutes = require('./routes/auth.js');
+const isAuthenticated = require('./middleware/isAuthenticated');
 
 const app = express();
 app.use(express.json());  // Middleware to parse JSON data
@@ -15,7 +17,8 @@ mongoose.connect('mongodb://localhost:27017/ecommerce')
 
 // Use the product routes for other product related endpoints
 app.use('/api/products', productRoutes);
-
+app.use('/api/users', userRoutes);
+app.get('/api/checkAuth', isAuthenticated);
 // Start the server
 const PORT = process.env.PORT || 5001;
 app.listen(PORT, () => {

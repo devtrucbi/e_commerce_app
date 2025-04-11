@@ -1,5 +1,5 @@
-import 'package:ecommerce_app/services/api_service.dart';
 import 'package:flutter/material.dart';
+import 'package:ecommerce_app/services/api_service.dart';
 
 class AddProductScreen extends StatefulWidget {
   const AddProductScreen({super.key});
@@ -12,16 +12,23 @@ class _AddProductScreenState extends State<AddProductScreen> {
   final _formKey = GlobalKey<FormState>();
   String _name = '';
   String _description = '';
-  String _category = ''; // Loại sản phẩm sẽ được chọn từ dropdown
+  String _category = '';
   String _status = '';
   double _discount = 0.0;
   double _oldPrice = 0.0;
   List<String> _images = [];
   List<String> _variants = [];
-  double _rating = 4.5;
-  String _imageUrl = ''; // Thêm biến để lưu trữ URL ảnh sản phẩm
-  int _stock = 0; // Số lượng tồn kho
+  double _rating = 0;
+  String _imageUrl = '';
+  int _stock = 0;
   int _sold = 0;
+  String _cpu = '';
+  String _ram = '';
+  String _vga = '';
+  String _storage = '';
+  String _monitorSize = '';
+  String _screenResolution = '';
+  String _refreshRate = '';
 
   // Danh sách các loại sản phẩm
   final List<String> _categories = [
@@ -50,6 +57,13 @@ class _AddProductScreenState extends State<AddProductScreen> {
         rating: _rating,
         stock: _stock, // Số lượng tồn kho
         sold: _sold,
+        cpu: _cpu,
+        ram: _ram,
+        vga: _vga,
+        storage: _storage,
+        monitorSize: _monitorSize,
+        screenResolution: _screenResolution,
+        refreshRate: _refreshRate,
       );
       if (result) {
         // Show success message
@@ -127,13 +141,70 @@ class _AddProductScreenState extends State<AddProductScreen> {
                   label: "URL ảnh sản phẩm",
                   onSaved: (value) => _imageUrl = value!,
                 ),
+
+                // Các trường bổ sung cho các loại sản phẩm
+                if (_category == 'Laptop' || _category == 'PC') ...[
+                  _buildTextInput(
+                    label: "CPU",
+                    onSaved: (value) => _cpu = value!,
+                  ),
+                  _buildTextInput(
+                    label: "RAM",
+                    onSaved: (value) => _ram = value!,
+                  ),
+                  _buildTextInput(
+                    label: "VGA",
+                    onSaved: (value) => _vga = value!,
+                  ),
+                  _buildTextInput(
+                    label: "Ổ cứng",
+                    onSaved: (value) => _storage = value!,
+                  ),
+                ],
+                if (_category == 'Màn Hình') ...[
+                  _buildTextInput(
+                    label: "Kích thước màn hình",
+                    onSaved: (value) => _monitorSize = value!,
+                  ),
+                  _buildTextInput(
+                    label: "Độ phân giải",
+                    onSaved: (value) => _screenResolution = value!,
+                  ),
+                  _buildTextInput(
+                    label: "Tần số quét",
+                    onSaved: (value) => _refreshRate = value!,
+                  ),
+                ],
+                if (_category == 'Ram' || _category == 'Ổ cứng') ...[
+                  _buildDropdown(
+                    label: "Dung lượng",
+                    value: _category == 'Ram' ? _ram : _storage,
+                    items:
+                        _category == 'Ram'
+                            ? ['8GB', '16GB']
+                            : ['256GB', '512GB', '1TB', '2TB'],
+                    onChanged: (newValue) {
+                      setState(() {
+                        if (_category == 'Ram') {
+                          _ram = newValue!;
+                        } else {
+                          _storage = newValue!;
+                        }
+                      });
+                    },
+                  ),
+                ],
+
                 SizedBox(height: 20),
                 ElevatedButton(
                   onPressed: _submitProduct,
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.blueAccent, // Màu nút
-                    padding: EdgeInsets.symmetric(vertical: 16),
-                    textStyle: TextStyle(fontSize: 18),
+                    backgroundColor: Color.fromARGB(255, 234, 150, 144),
+                    padding: EdgeInsets.symmetric(horizontal: 32, vertical: 8),
+                    textStyle: TextStyle(fontSize: 18, color: Colors.black),
+                    elevation: 8,
+                    shadowColor: Colors.white,
+                    side: BorderSide(width: 2, color: Colors.black),
                   ),
                   child: Text("Thêm sản phẩm"),
                 ),

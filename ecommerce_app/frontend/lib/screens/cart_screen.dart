@@ -1,14 +1,13 @@
 import 'package:flutter/material.dart';
 
 class CartScreen extends StatelessWidget {
-  const CartScreen({super.key});
+  const CartScreen({Key? key}) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
-    // Đây là nơi bạn có thể hiển thị các sản phẩm trong giỏ hàng
     return Scaffold(
-      appBar: AppBar(title: Text('Your Cart')),
-      body: Center(child: Text('No products in cart yet.')),
+      appBar: AppBar(title: const Text('Giỏ hàng')),
+      body: Center(child: const Text('Đây là giỏ hàng của bạn!')),
     );
   }
 }

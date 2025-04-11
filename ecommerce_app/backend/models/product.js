@@ -1,5 +1,12 @@
 const mongoose = require('mongoose');
 
+const reviewSchema = new mongoose.Schema({
+  rating: { type: Number, required: true },
+  comment: { type: String, required: true },
+  userName: { type: String, required: true },
+  createdAt: { type: Date, default: Date.now },
+});
+
 const productSchema = new mongoose.Schema({
   name: { type: String, required: true },
   description: { type: String, required: true },
@@ -13,6 +20,7 @@ const productSchema = new mongoose.Schema({
   rating: { type: Number, default: 4.5 },
   stock: { type: Number, required: true },
   sold: { type: Number, default: 0 },
+  reviews: [reviewSchema],
   // Các trường bổ sung:
   cpu: { type: String, default: '' },
   ram: { type: String, default: '' },
