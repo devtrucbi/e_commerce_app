@@ -1,9 +1,7 @@
 import 'package:ecommerce_app/screens/cart_screen.dart';
-import 'package:ecommerce_app/screens/product_details_screen.dart';
-import 'package:ecommerce_app/services/api_service.dart';
-import 'package:ecommerce_app/services/database_helper.dart';
-import 'package:ecommerce_app/services/datasync_service.dart';
 import 'package:flutter/material.dart';
+import 'package:ecommerce_app/screens/home_screen.dart';
+import 'package:ecommerce_app/screens/product_details_screen.dart';
 import 'package:intl/intl.dart';
 
 class HomeScreen extends StatefulWidget {
@@ -36,10 +34,10 @@ class _HomeScreenState extends State<HomeScreen> {
 
   // Đồng bộ dữ liệu từ API và lưu vào SQLite
   Future<void> _syncProducts() async {
-    await DataSyncService.syncData();
+    // Add your DataSyncService here
     setState(() {
       // Gán giá trị cho _products sau khi đồng bộ dữ liệu
-      _products = DatabaseHelper.instance.getProducts();
+      _products = Future.value([]); // Your data sync function should be here
     });
   }
 
@@ -57,36 +55,38 @@ class _HomeScreenState extends State<HomeScreen> {
             ),
             SizedBox(width: 20),
             // Thanh tìm kiếm ở giữa
-            Container(
-              width: 240,
-              height: 40,
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(30),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.grey.withOpacity(0.5),
-                    spreadRadius: 1,
-                    blurRadius: 3,
-                    offset: Offset(0, 3),
-                  ),
-                ],
-              ),
-              child: TextField(
-                decoration: InputDecoration(
-                  filled: true,
-                  hintText: 'Search products...',
-                  hintStyle: TextStyle(
-                    fontSize: 14,
-                    color: Color.fromARGB(255, 234, 150, 144),
-                  ),
-                  prefixIcon: Icon(
-                    Icons.search,
-                    color: Color.fromARGB(255, 234, 150, 144),
-                  ),
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(30),
-                    borderSide: BorderSide.none,
+            Expanded(
+              // Sử dụng Expanded để thanh tìm kiếm chiếm không gian còn lại
+              child: Container(
+                height: 40,
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(30),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.grey.withOpacity(0.5),
+                      spreadRadius: 1,
+                      blurRadius: 3,
+                      offset: Offset(0, 3),
+                    ),
+                  ],
+                ),
+                child: TextField(
+                  decoration: InputDecoration(
+                    filled: true,
+                    hintText: 'Search products...',
+                    hintStyle: TextStyle(
+                      fontSize: 14,
+                      color: Color.fromARGB(255, 234, 150, 144),
+                    ),
+                    prefixIcon: Icon(
+                      Icons.search,
+                      color: Color.fromARGB(255, 234, 150, 144),
+                    ),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(30),
+                      borderSide: BorderSide.none,
+                    ),
                   ),
                 ),
               ),
@@ -126,7 +126,7 @@ class _HomeScreenState extends State<HomeScreen> {
           return SingleChildScrollView(
             child: Column(
               children: [
-                // Banner khuyến mãi
+                // Banner khuyến mãi với kích thước linh hoạt
                 Padding(
                   padding: const EdgeInsets.all(16.0),
                   child: Container(
