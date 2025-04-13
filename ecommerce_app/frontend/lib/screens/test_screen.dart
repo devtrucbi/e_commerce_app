@@ -1,17 +1,18 @@
 import 'package:flutter/material.dart';
-import 'package:ecommerce_app/services/database_helper.dart';
+import 'package:ecommerce_app/services/hive_service.dart'; // Import HiveService
 
 class ProductListScreen extends StatelessWidget {
-  Future<List<Map<String, dynamic>>> _loadProductsFromSQLite() async {
-    return await DatabaseHelper.instance.getProducts();
+  // Load products from Hive
+  Future<List<Map<String, dynamic>>> _loadProductsFromHive() async {
+    return await HiveService.getProducts();
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: Text('Sản phẩm từ SQLite')),
+      appBar: AppBar(title: Text('Sản phẩm từ Hive')),
       body: FutureBuilder<List<Map<String, dynamic>>>(
-        future: _loadProductsFromSQLite(),
+        future: _loadProductsFromHive(), // Call to load data from Hive
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
             return Center(child: CircularProgressIndicator());
@@ -25,7 +26,7 @@ class ProductListScreen extends StatelessWidget {
             return Center(child: Text('Không có sản phẩm'));
           }
 
-          // Lấy danh sách sản phẩm
+          // Get the product list from Hive
           final products = snapshot.data!;
 
           return ListView.builder(

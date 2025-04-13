@@ -1,3 +1,4 @@
+import 'package:ecommerce_app/screens/add_product_screen.dart';
 import 'package:ecommerce_app/screens/cart_screen.dart';
 import 'package:flutter/material.dart';
 // import 'package:shared_preferences/shared_preferences.dart';
@@ -35,7 +36,32 @@ class OrderScreen extends StatelessWidget {
           ),
         ],
       ),
-      body: Center(child: Text('Here are your orders!')),
+      body: Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            // Hiển thị thông tin mã giảm giá
+            Text('Here are some coupons for you!'),
+
+            // Nút chuyển hướng đến AddProductScreen
+            SizedBox(height: 20),
+            ElevatedButton(
+              onPressed: () {
+                // Chuyển đến AddProductScreen
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => AddProductScreen()),
+                );
+              },
+              child: Text('Go to Add Product Screen'),
+              style: ElevatedButton.styleFrom(
+                minimumSize: Size(200, 50), // Kích thước nút
+                textStyle: TextStyle(fontSize: 18),
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }

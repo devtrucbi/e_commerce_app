@@ -15,7 +15,7 @@ const productSchema = new mongoose.Schema({
   oldprice: { type: Number, required: true },
   newprice: { type: Number, required: true },
   discount: { type: Number, default: 0 },
-  images: [String],
+  images: [{type: String}],
   variants: [String],
   rating: { type: Number, default: 4.5 },
   stock: { type: Number, required: true },

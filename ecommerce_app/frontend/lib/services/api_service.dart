@@ -1,5 +1,5 @@
 import 'dart:convert';
-import 'package:ecommerce_app/services/database_helper.dart';
+import 'package:ecommerce_app/services/hive_service.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -7,128 +7,50 @@ class ApiService {
   static const String baseUrl =
       'http://localhost:5001/api'; // URL backend của bạn
 
-  // Lấy danh sách sản phẩm từ backend và lưu vào SQLite nếu có kết nối internet
+  // -------------------- Product --------------------
+
+  // Lấy danh sách sản phẩm từ backend và lưu vào Hive nếu có kết nối internet
   static Future<List<Map<String, dynamic>>> getProducts() async {
     try {
       final response = await http.get(Uri.parse('$baseUrl/products'));
       if (response.statusCode == 200) {
         List<dynamic> data = json.decode(response.body);
-        print("Dữ liệu nhận từ API: $data"); // In ra dữ liệu để kiểm tra
-        await DatabaseHelper.instance.insertProducts(
-          data.map((item) => item as Map<String, dynamic>).toList(),
-        );
+        // print("Dữ liệu nhận từ API: $data"); // In ra dữ liệu để kiểm tra
+        await HiveService.saveProducts(data); // Lưu vào Hive
         return data.map((item) => item as Map<String, dynamic>).toList();
       } else {
         print("Lỗi API: ${response.statusCode}");
-        return await DatabaseHelper.instance.getProducts();
+        return await HiveService.getProducts(); // Lấy từ Hive khi không có kết nối
       }
     } catch (e) {
       print("Lỗi khi gọi API: $e");
-      return await DatabaseHelper.instance.getProducts();
+      return await HiveService.getProducts(); // Lấy từ Hive nếu có lỗi API
     }
   }
 
-  // Lấy chi tiết sản phẩm theo ID từ backend và lưu vào SQLite nếu có kết nối internet
+  // Lấy chi tiết sản phẩm từ API hoặc Hive khi không có kết nối internet
   static Future<Map<String, dynamic>> getProductDetail(String productId) async {
     try {
       final response = await http.get(
         Uri.parse('$baseUrl/products/$productId'),
       );
-
       if (response.statusCode == 200) {
         return json.decode(response.body);
       } else {
         throw Exception('Failed to load product details');
       }
     } catch (e) {
-      // Nếu không có kết nối API, lấy dữ liệu từ SQLite
-      throw Exception('Error fetching product detail');
-    }
-  }
-
-  // Lấy các sản phẩm theo danh mục (category)
-  static Future<List<Map<String, dynamic>>> fetchProductsByCategory(
-    String category,
-  ) async {
-    try {
-      final response = await http.get(
-        Uri.parse('$baseUrl/products/category/$category'),
-      );
-
-      if (response.statusCode == 200) {
-        List<dynamic> data = json.decode(response.body);
-
-        // Lưu vào SQLite
-        await DatabaseHelper.instance.insertProducts(
-          data.map((item) => item as Map<String, dynamic>).toList(),
-        );
-
-        return data.map((item) => item as Map<String, dynamic>).toList();
+      print('No internet connection. Trying to fetch from Hive...');
+      var product = await HiveService.getProductDetailFromHive(productId);
+      if (product != null) {
+        return product;
       } else {
-        // Nếu không có kết nối API, lấy dữ liệu từ SQLite
-        return await DatabaseHelper.instance.getProducts();
+        throw Exception('Product not found in local storage (Hive).');
       }
-    } catch (e) {
-      // Nếu không có kết nối API, lấy dữ liệu từ SQLite
-      return await DatabaseHelper.instance.getProducts();
     }
   }
 
-  // Đăng ký người dùng
-  static Future<bool> registerUser({
-    required String email,
-    required String fullName,
-    required String address,
-    required String password,
-  }) async {
-    try {
-      final response = await http.post(
-        Uri.parse('$baseUrl/users/register'), // Đảm bảo đường dẫn chính xác
-        headers: {'Content-Type': 'application/json'},
-        body: json.encode({
-          'email': email,
-          'fullName': fullName,
-          'address': address,
-          'password': password, // Chắc chắn gửi mật khẩu
-        }),
-      );
-
-      if (response.statusCode == 201) {
-        return true;
-      } else {
-        print('Lỗi từ backend: ${response.body}'); // In ra lỗi chi tiết
-        throw Exception('Đăng ký không thành công');
-      }
-    } catch (e) {
-      print('Lỗi đăng ký: $e'); // In ra lỗi nếu có
-      throw Exception('Lỗi đăng ký');
-    }
-  }
-
-  // Đăng nhập người dùng
-  static Future<String?> loginUser({
-    required String email,
-    required String password,
-  }) async {
-    try {
-      var response = await http.post(
-        Uri.parse('$baseUrl/users/login'),
-        headers: {'Content-Type': 'application/json'},
-        body: json.encode({'email': email, 'password': password}),
-      );
-
-      if (response.statusCode == 200) {
-        var data = json.decode(response.body);
-        return data['token']; // Trả về token
-      } else {
-        throw Exception('Đăng nhập không thành công');
-      }
-    } catch (e) {
-      print('Lỗi đăng nhập: $e');
-      throw Exception('Lỗi đăng nhập');
-    }
-  }
-
+  // Thêm sản phẩm mới vào backend và Hive
   static Future<bool> addProduct({
     required String name,
     required String description,
@@ -139,14 +61,14 @@ class ApiService {
     required List<String> images,
     required List<String> variants,
     required double rating,
-    required int stock, // Thêm tham số stock
+    required int stock,
     required int sold,
     String? cpu,
     String? ram,
     String? vga,
     String? storage,
     String? monitorSize,
-    String? screenResolution, // Thêm trường screenResolution
+    String? screenResolution,
     String? refreshRate,
   }) async {
     var response = await http.post(
@@ -162,27 +84,22 @@ class ApiService {
         'images': images,
         'variants': variants,
         'rating': rating,
-        'stock': stock, // Thêm tham số stock
-        'sold': sold, // Thêm tham số sold
+        'stock': stock,
+        'sold': sold,
         'cpu': cpu,
         'ram': ram,
         'vga': vga,
         'storage': storage,
         'monitorSize': monitorSize,
-        'screenResolution': screenResolution, // Truyền trường screenResolution
+        'screenResolution': screenResolution,
         'refreshRate': refreshRate,
       }),
     );
 
-    return response.statusCode == 200; // Trả về true nếu thêm thành công
-  }
-
-  // Xoá sản phẩm
-  static Future<bool> deleteProduct(String productId) async {
-    var uri = Uri.parse('$baseUrl/products/$productId');
-    var response = await http.delete(uri);
-
     if (response.statusCode == 200) {
+      // Save the added product to Hive
+      var product = json.decode(response.body);
+      await HiveService.saveProducts([product]);
       return true;
     } else {
       return false;
@@ -202,7 +119,7 @@ class ApiService {
     required List<String> images,
     required List<String> variants,
     required double rating,
-    required int stock, // Thêm tham số stock
+    required int stock,
     required int sold,
   }) async {
     var uri = Uri.parse('$baseUrl/products/$productId');
@@ -220,103 +137,99 @@ class ApiService {
         'images': images,
         'variants': variants,
         'rating': rating,
-        'stock': stock, // Thêm tham số stock
-        'sold': sold, // Thêm tham số sold
+        'stock': stock,
+        'sold': sold,
       }),
     );
 
-    return response.statusCode == 200; // Kiểm tra mã trạng thái trả về
-  }
-
-  // Inside ApiService
-
-  // Lấy tên người dùng từ token
-  // static Future<String> _getUserNameFromToken(String token) async {
-  //   final prefs = await SharedPreferences.getInstance();
-  //   final decodedToken = json.decode(token);
-  //   return decodedToken['name']; // Assuming 'name' is stored in token
-  // }
-
-  static Future<Map<String, dynamic>> getUserInfo(String token) async {
-    var response = await http.get(
-      Uri.parse('$baseUrl/users/me'),
-      headers: {
-        'Authorization': 'Bearer $token', // Thêm token vào header
-      },
-    );
-
     if (response.statusCode == 200) {
-      return json.decode(response.body);
+      // Update product in Hive
+      var updatedProduct = json.decode(response.body);
+      await HiveService.updateProduct(productId, updatedProduct);
+      return true;
     } else {
-      throw Exception('Failed to load user info');
+      return false;
     }
   }
 
-  // Thêm sản phẩm vào giỏ hàng
-  static Future<bool> addProductToCart({
-    required String productId,
-    required int quantity,
-  }) async {
-    final prefs = await SharedPreferences.getInstance();
-    final token = prefs.getString('userToken');
+  // Xóa sản phẩm
+  static Future<bool> deleteProduct(String productId) async {
+    var uri = Uri.parse('$baseUrl/products/$productId');
+    var response = await http.delete(uri);
 
+    if (response.statusCode == 200) {
+      // Delete product from Hive
+      await HiveService.deleteProduct(productId);
+      return true;
+    } else {
+      return false;
+    }
+  }
+
+  // -------------------- User --------------------
+
+  // Đăng ký người dùng
+  static Future<bool> registerUser({
+    required String email,
+    required String fullName,
+    required String address,
+    required String password,
+  }) async {
     try {
-      var response = await http.post(
-        Uri.parse('$baseUrl/cart'),
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': 'Bearer $token',
-        },
-        body: json.encode({'productId': productId, 'quantity': quantity}),
+      final response = await http.post(
+        Uri.parse('$baseUrl/users/register'),
+        headers: {'Content-Type': 'application/json'},
+        body: json.encode({
+          'email': email,
+          'fullName': fullName,
+          'address': address,
+          'password': password,
+        }),
       );
 
-      return response.statusCode == 200;
-    } catch (e) {
-      throw Exception('Failed to add product to cart');
-    }
-  }
-
-  //TÍCH HỢP API VỚI SQFLITE
-  static Future<void> syncProducts() async {
-    var uri = Uri.parse('$baseUrl/products');
-    var response = await http.get(uri);
-
-    if (response.statusCode == 200) {
-      List<dynamic> productsData = json.decode(response.body);
-      for (var product in productsData) {
-        await DatabaseHelper.instance.addProduct({
-          'name': product['name'],
-          'description': product['description'],
-          'category': product['category'],
-          'status': product['status'],
-          'oldprice': product['oldprice'],
-          'newprice': product['newprice'],
-          'discount': product['discount'],
-          'images': json.encode(product['images']),
-          'variants': json.encode(product['variants']),
-          'rating': product['rating'],
-          'stock': product['stock'],
-          'sold': product['sold'],
-          'cpu': product['cpu'],
-          'ram': product['ram'],
-          'vga': product['vga'],
-          'storage': product['storage'],
-          'monitor_size': product['monitor_size'],
-          'screen_resolution': product['screen_resolution'],
-          'refresh_rate': product['refresh_rate'],
-          'screen_size': product['screen_size'],
-          'resolution': product['resolution'],
-        });
+      if (response.statusCode == 201) {
+        // Lưu thông tin người dùng vào Hive sau khi đăng ký thành công
+        var userInfo = json.decode(response.body);
+        await HiveService.saveUserInfo(userInfo);
+        return true;
+      } else {
+        print('Lỗi từ backend: ${response.body}');
+        throw Exception('Đăng ký không thành công');
       }
-    } else {
-      throw Exception('Failed to load products');
+    } catch (e) {
+      print('Lỗi đăng ký: $e');
+      throw Exception('Lỗi đăng ký');
     }
   }
 
-  // Lấy sản phẩm từ SQLite
-  static Future<List<Map<String, dynamic>>> getProductsFromSQLite() async {
-    return await DatabaseHelper.instance.getProducts();
+  // Đăng nhập người dùng
+  static Future<String?> loginUser({
+    required String email,
+    required String password,
+  }) async {
+    try {
+      var response = await http.post(
+        Uri.parse('$baseUrl/users/login'),
+        headers: {'Content-Type': 'application/json'},
+        body: json.encode({'email': email, 'password': password}),
+      );
+
+      if (response.statusCode == 200) {
+        var data = json.decode(response.body);
+        // Lưu token vào SharedPreferences
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.setString('userToken', data['token']); // Lưu token
+        return data['token']; // Trả về token
+      } else {
+        throw Exception('Đăng nhập không thành công');
+      }
+    } catch (e) {
+      print('Lỗi đăng nhập: $e');
+      throw Exception('Lỗi đăng nhập');
+    }
   }
+
+  // -------------------- Review --------------------
 
   // Thêm đánh giá sản phẩm
   static Future<void> submitReview({
@@ -327,7 +240,7 @@ class ApiService {
   }) async {
     try {
       final response = await http.post(
-        Uri.parse('$baseUrl/products/$productId/reviews'), // Correct endpoint
+        Uri.parse('$baseUrl/products/$productId/reviews'),
         headers: {'Content-Type': 'application/json'},
         body: json.encode({
           'rating': rating,
@@ -337,15 +250,9 @@ class ApiService {
       );
 
       if (response.statusCode == 201) {
-        // Đánh giá được gửi thành công, lưu vào SQLite
+        // Lưu vào Hive
         var review = json.decode(response.body);
-        await DatabaseHelper.instance.addReview({
-          'productId': productId,
-          'rating': review['rating'],
-          'comment': review['comment'],
-          'userName': review['userName'],
-          'createdAt': review['createdAt'],
-        });
+        await HiveService.saveReview(productId, review);
         print('Review submitted and saved locally');
       } else {
         print('Failed to submit review: ${response.body}');
@@ -357,7 +264,7 @@ class ApiService {
     }
   }
 
-  // Lấy tất cả bình luận của sản phẩm từ API và lưu vào SQLite
+  // Lấy tất cả bình luận của sản phẩm từ API và lưu vào Hive
   static Future<List<Map<String, dynamic>>> getProductReviews({
     required String productId,
   }) async {
@@ -368,50 +275,81 @@ class ApiService {
 
       if (response.statusCode == 200) {
         List<dynamic> data = json.decode(response.body);
-
-        // Lưu dữ liệu đánh giá vào SQLite
-        for (var review in data) {
-          await DatabaseHelper.instance.addReview({
-            'productId': productId,
-            'rating': review['rating'],
-            'comment': review['comment'],
-            'userName': review['userName'],
-            'createdAt': review['createdAt'],
-          });
-        }
+        await HiveService.saveReviews(productId, data); // Lưu vào Hive
         return data.map((item) => item as Map<String, dynamic>).toList();
       } else {
         throw Exception('Failed to load reviews');
       }
     } catch (e) {
-      print('Error fetching reviews: $e');
-      throw Exception('Error fetching reviews');
+      return await HiveService.getReviewsFromHive(
+        productId,
+      ); // Lấy từ Hive khi không có kết nối
     }
   }
 
-  // Lấy đánh giá từ SQLite nếu không có kết nối Internet
-  static Future<List<Map<String, dynamic>>> getReviewsFromSQLite(
-    int productId,
-  ) async {
-    return await DatabaseHelper.instance.getReviews(productId);
+  // -------------------- Sync --------------------
+
+  // Đồng bộ sản phẩm từ API về Hive
+  static Future<void> syncProducts() async {
+    var uri = Uri.parse('$baseUrl/products');
+    var response = await http.get(uri);
+
+    if (response.statusCode == 200) {
+      List<dynamic> productsData = json.decode(response.body);
+      await HiveService.saveProducts(productsData);
+    } else {
+      throw Exception('Failed to load products');
+    }
   }
 
-  // Lấy danh sách sản phẩm từ SQLite và in ra console
-  static Future<void> printProductsFromSQLite() async {
+  // Lấy thông tin người dùng từ API và lưu vào Hive nếu có kết nối internet
+  static Future<Map<String, dynamic>> getUserInfo(String token) async {
     try {
-      // Lấy danh sách sản phẩm từ SQLite
-      List<Map<String, dynamic>> products =
-          await DatabaseHelper.instance.getProducts();
+      var response = await http.get(
+        Uri.parse('$baseUrl/users/me'),
+        headers: {
+          'Authorization': 'Bearer $token', // Thêm token vào header
+        },
+      );
 
-      // In ra console để kiểm tra dữ liệu
-      print("Sản phẩm từ SQLite:");
+      if (response.statusCode == 200) {
+        Map<String, dynamic> userInfo = json.decode(response.body);
+
+        // Lưu thông tin người dùng vào Hive
+        await HiveService.saveUserInfo(userInfo);
+
+        return userInfo;
+      } else {
+        throw Exception('Failed to load user info');
+      }
+    } catch (e) {
+      print('Error fetching user info: $e');
+
+      // Nếu không có kết nối Internet, lấy thông tin người dùng từ Hive
+      var userInfo = await HiveService.getUserInfoFromHive();
+
+      if (userInfo != null) {
+        return userInfo;
+      } else {
+        throw Exception('Failed to fetch user info from local storage');
+      }
+    }
+  }
+
+  // -------------------- Utility --------------------
+
+  // In danh sách sản phẩm từ Hive
+  static Future<void> printProductsFromHive() async {
+    try {
+      List<Map<String, dynamic>> products = await HiveService.getProducts();
+      print("Sản phẩm từ Hive:");
       products.forEach((product) {
         print(
           'ID: ${product['_id']}, Name: ${product['name']}, Description: ${product['description']}',
         );
       });
     } catch (e) {
-      print('Lỗi khi lấy dữ liệu từ SQLite: $e');
+      print('Lỗi khi lấy dữ liệu từ Hive: $e');
     }
   }
 }

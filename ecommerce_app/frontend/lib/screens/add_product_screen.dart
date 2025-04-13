@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:ecommerce_app/services/api_service.dart';
 
@@ -19,7 +20,6 @@ class _AddProductScreenState extends State<AddProductScreen> {
   List<String> _images = [];
   List<String> _variants = [];
   double _rating = 0;
-  String _imageUrl = '';
   int _stock = 0;
   int _sold = 0;
   String _cpu = '';
@@ -29,6 +29,7 @@ class _AddProductScreenState extends State<AddProductScreen> {
   String _monitorSize = '';
   String _screenResolution = '';
   String _refreshRate = '';
+  String _imageUrl = '';
 
   // Danh sách các loại sản phẩm
   final List<String> _categories = [
@@ -45,6 +46,12 @@ class _AddProductScreenState extends State<AddProductScreen> {
   Future<void> _submitProduct() async {
     if (_formKey.currentState!.validate()) {
       _formKey.currentState!.save();
+
+      // Add the first image URL
+      if (_imageUrl.isNotEmpty) {
+        _images.add(_imageUrl);
+      }
+
       final result = await ApiService.addProduct(
         name: _name,
         description: _description,
@@ -52,7 +59,7 @@ class _AddProductScreenState extends State<AddProductScreen> {
         category: _category, // Lấy loại sản phẩm từ dropdown
         status: _status,
         discount: _discount,
-        images: [_imageUrl, ..._images],
+        images: _images, // Lưu nhiều ảnh
         variants: _variants,
         rating: _rating,
         stock: _stock, // Số lượng tồn kho
@@ -65,6 +72,7 @@ class _AddProductScreenState extends State<AddProductScreen> {
         screenResolution: _screenResolution,
         refreshRate: _refreshRate,
       );
+
       if (result) {
         // Show success message
         ScaffoldMessenger.of(
@@ -138,9 +146,10 @@ class _AddProductScreenState extends State<AddProductScreen> {
                   onSaved: (value) => _stock = int.parse(value!),
                 ),
                 _buildTextInput(
-                  label: "URL ảnh sản phẩm",
+                  label: "URL ảnh sản phẩm (Thêm ảnh chính)",
                   onSaved: (value) => _imageUrl = value!,
                 ),
+                _buildMultipleImagesField(),
 
                 // Các trường bổ sung cho các loại sản phẩm
                 if (_category == 'Laptop' || _category == 'PC') ...[
@@ -173,25 +182,6 @@ class _AddProductScreenState extends State<AddProductScreen> {
                   _buildTextInput(
                     label: "Tần số quét",
                     onSaved: (value) => _refreshRate = value!,
-                  ),
-                ],
-                if (_category == 'Ram' || _category == 'Ổ cứng') ...[
-                  _buildDropdown(
-                    label: "Dung lượng",
-                    value: _category == 'Ram' ? _ram : _storage,
-                    items:
-                        _category == 'Ram'
-                            ? ['8GB', '16GB']
-                            : ['256GB', '512GB', '1TB', '2TB'],
-                    onChanged: (newValue) {
-                      setState(() {
-                        if (_category == 'Ram') {
-                          _ram = newValue!;
-                        } else {
-                          _storage = newValue!;
-                        }
-                      });
-                    },
                   ),
                 ],
 
@@ -280,6 +270,28 @@ class _AddProductScreenState extends State<AddProductScreen> {
           },
         ),
       ),
+    );
+  }
+
+  // Widget cho việc thêm nhiều ảnh
+  Widget _buildMultipleImagesField() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _buildTextInput(
+          label: "URL ảnh phụ (Thêm nhiều ảnh, cách nhau bằng dấu phẩy)",
+          onSaved: (value) {
+            if (value != null && value.isNotEmpty) {
+              _images = value.split(',').map((e) => e.trim()).toList();
+            }
+          },
+        ),
+        SizedBox(height: 8),
+        Text(
+          'Lưu ý: Bạn có thể thêm nhiều ảnh bằng cách ngăn cách URL bằng dấu phẩy.',
+          style: TextStyle(fontSize: 12, color: Colors.grey),
+        ),
+      ],
     );
   }
 }

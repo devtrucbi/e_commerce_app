@@ -5,8 +5,11 @@ import 'package:ecommerce_app/screens/login_screen.dart';
 import 'package:ecommerce_app/screens/coupon_screen.dart';
 import 'package:ecommerce_app/screens/order_screen.dart';
 import 'package:ecommerce_app/screens/account_screen.dart';
+import 'package:hive/hive.dart';
+import 'package:hive_flutter/hive_flutter.dart';
 
-void main() {
+void main() async {
+  await Hive.initFlutter();
   runApp(const MyApp());
 }
 

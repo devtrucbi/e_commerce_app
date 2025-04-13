@@ -1,6 +1,8 @@
+import 'dart:async';
 import 'package:ecommerce_app/screens/cart_screen.dart';
+import 'package:ecommerce_app/services/api_service.dart';
+import 'package:ecommerce_app/services/hive_service.dart';
 import 'package:flutter/material.dart';
-import 'package:ecommerce_app/screens/home_screen.dart';
 import 'package:ecommerce_app/screens/product_details_screen.dart';
 import 'package:intl/intl.dart';
 
@@ -29,15 +31,14 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   void initState() {
     super.initState();
-    _syncProducts;
+    _syncProducts();
   }
 
-  // Đồng bộ dữ liệu từ API và lưu vào SQLite
+  // Đồng bộ dữ liệu từ API và lưu vào Hive
   Future<void> _syncProducts() async {
-    // Add your DataSyncService here
     setState(() {
-      // Gán giá trị cho _products sau khi đồng bộ dữ liệu
-      _products = Future.value([]); // Your data sync function should be here
+      _products =
+          ApiService.getProducts(); // Sử dụng ApiService để lấy dữ liệu sản phẩm
     });
   }
 
@@ -56,7 +57,6 @@ class _HomeScreenState extends State<HomeScreen> {
             SizedBox(width: 20),
             // Thanh tìm kiếm ở giữa
             Expanded(
-              // Sử dụng Expanded để thanh tìm kiếm chiếm không gian còn lại
               child: Container(
                 height: 40,
                 decoration: BoxDecoration(
